@@ -96,7 +96,7 @@ reg [31:0] reg_onchip_readdata;          //                          .readdata
 reg [31:0] reg_onchip_writedata;         //                          .writedata
 reg [3:0]  reg_onchip_byteenable;        //                          .byteenable
 reg          reg_irq_flg;
-//reg          reg_data_store_flg = 1'b0;
+reg          reg_data_store_flg = 1'b0;
 
 assign onchip_address = reg_onchip_address;
 assign onchip_chipselect = reg_onchip_chipselect;
@@ -110,27 +110,34 @@ reg [31:0]enable_counter = 32'h0;
 reg [11:0]address_counter = 12'h0;
 
 always @(posedge clk) begin
-    if(enable_counter > 12'hc350) begin
-			enable_counter <= 32'h0;
-			address_counter <= address_counter + 1'b1;
-		if(address_counter == 12'd1000)  begin
-			address_counter <= 12'h0;
-		end
-	  end
-	  else begin
-			reg_onchip_chipselect <= 1'b1;
-			reg_onchip_clken <= 1'b1;
-	      reg_onchip_byteenable <= 4'b1111;
-		   reg_onchip_address <= address_counter;
-			reg_onchip_writedata[11:0] <= SYNTHESIZED_WIRE_1;
-			reg_onchip_writedata[23:12] <= SYNTHESIZED_WIRE_2;
-			if(SYNTHESIZED_WIRE_1 > 12'd500)
-				reg_irq_flg <= 1'b1;
-			else
-				reg_irq_flg <= 1'b0;
-		  	reg_onchip_write <= 1'b1;
-			enable_counter <= enable_counter + 1'b1;
-	end
+    if (enable_counter > 16'hc350) begin
+        enable_counter <= 32'h0;
+        if (SYNTHESIZED_WIRE_1 > 12'd500 && reg_data_store_flg == 1'b0) begin            
+            reg_data_store_flg <= 1'b1;
+            address_counter <= 12'h0; 
+        end
+        if(reg_data_store_flg == 1'b1) begin
+            address_counter <= address_counter + 1'b1;        
+        end
+        if (address_counter > 12'd2000) begin
+            address_counter <= 12'h0; 
+            reg_irq_flg <= 1'b1;
+            reg_data_store_flg <= 1'b0;
+        end
+        else begin
+            reg_irq_flg <= 1'b0;
+         end
+    end
+    else begin
+        reg_onchip_chipselect <= 1'b1;
+        reg_onchip_clken <= 1'b1;
+        reg_onchip_byteenable <= 4'b1111;
+        reg_onchip_address <= address_counter;
+        reg_onchip_writedata[11:0] <= SYNTHESIZED_WIRE_1;
+        reg_onchip_writedata[23:12] <= SYNTHESIZED_WIRE_2;
+        reg_onchip_write <= 1'b1;
+        enable_counter <= enable_counter + 1'b1;
+    end
 end
 
 wire	SYNTHESIZED_WIRE_0;
